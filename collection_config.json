@@ -85,6 +85,20 @@
         "imsd",
         "izdr"
       ]
+    },
+    "Storm Crow": {
+      "armor": [
+        "rd"
+      ],
+      "pants": [
+        "dd"
+      ],
+      "gloves": [
+        "imsd"
+      ],
+      "boots": [
+        "rd"
+      ]
     }
   }
 }

@@ -202,6 +202,24 @@ All 44 MuDream armor sets are supported:
 
 </details>
 
+### Special Sets (Missing Pieces)
+
+Some sets have incomplete armor pieces:
+
+**Sets without Gloves:**
+- Sacred Fire
+- Storm Zahard
+- Piercing Grove
+- Phoenix Soul
+
+**Sets without Helmet:**
+- Volcano
+- Hurricane
+- Thunder Hawk
+- Storm Crow
+
+*Note: The app automatically detects these and disables the missing piece options during configuration.*
+
 ## 📝 Technical Details
 
 **Built with:**
