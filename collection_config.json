@@ -44,24 +44,39 @@
       ]
     },
     "Leather": {
-      "helm": [
-        "imsd"
-      ],
-      "armor": [
-        "dd",
-        "dsr"
-      ],
-      "pants": [
-        "imsd",
-        "dsr"
-      ],
-      "gloves": [
-        "dd"
-      ],
-      "boots": [
-        "dd",
-        "izdr"
-      ]
+      "helm": {
+        "options": [
+          "imsd"
+        ],
+        "collected": false
+      },
+      "armor": {
+        "options": [
+          "dd",
+          "dsr"
+        ],
+        "collected": true
+      },
+      "pants": {
+        "options": [
+          "imsd",
+          "dsr"
+        ],
+        "collected": false
+      },
+      "gloves": {
+        "options": [
+          "dd"
+        ],
+        "collected": false
+      },
+      "boots": {
+        "options": [
+          "dd",
+          "izdr"
+        ],
+        "collected": false
+      }
     },
     "Bronze": {
       "helm": [

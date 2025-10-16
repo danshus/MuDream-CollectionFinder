@@ -64,6 +64,7 @@ class MuDreamCollectionFinder:
         
         self.piece_types = ['helm', 'armor', 'pants', 'gloves', 'boots']
         self.checkboxes = {}
+        self.collected_vars = {}  # Track collected status
         self.piece_frames = {}  # Store references to piece frames
         self.config = {'sets': {}}
         self.search_set_selection = tk.StringVar(value="All Sets")
@@ -117,8 +118,16 @@ class MuDreamCollectionFinder:
                 if var.get():
                     selected.append(opt_code)
                     has_requirements = True
-            if selected:
-                requirements[piece] = selected
+            
+            # Get collected status
+            is_collected = self.collected_vars[piece].get()
+            
+            # Store both options and collected status
+            if selected or is_collected:
+                requirements[piece] = {
+                    'options': selected,
+                    'collected': is_collected
+                }
         
         if not has_requirements:
             messagebox.showerror("Error", "Please select at least one excellent option!")
@@ -133,15 +142,22 @@ class MuDreamCollectionFinder:
             
             self.update_configured_sets_display()
             
-            # Count configured pieces
-            configured_pieces = len([p for p, opts in requirements.items() if opts])
+            # Count configured pieces and collected pieces
+            configured_pieces = len([p for p, data in requirements.items() if data.get('options')])
+            collected_pieces = len([p for p, data in requirements.items() if data.get('collected')])
             total_pieces = 5
             if set_name in self.sets_missing_gloves:
                 total_pieces -= 1
             if set_name in self.sets_missing_helm:
                 total_pieces -= 1
             
-            messagebox.showinfo("Success", f"{set_name} set {action} successfully!\n{configured_pieces}/{total_pieces} pieces configured\nTotal sets: {len(self.config['sets'])}")
+            msg = f"{set_name} set {action} successfully!\n"
+            msg += f"{configured_pieces}/{total_pieces} pieces configured"
+            if collected_pieces > 0:
+                msg += f"\n{collected_pieces} piece(s) marked as collected"
+            msg += f"\nTotal sets: {len(self.config['sets'])}"
+            
+            messagebox.showinfo("Success", msg)
             return True
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save config: {e}")
@@ -169,10 +185,11 @@ class MuDreamCollectionFinder:
         """Clear all checkboxes and load set config if it exists"""
         set_name = self.selected_set.get()
         
-        # Clear all checkboxes first
+        # Clear all checkboxes and collected status first
         for piece in self.piece_types:
             for opt_code, var in self.checkboxes[piece].items():
                 var.set(False)
+            self.collected_vars[piece].set(False)
         
         # Enable/disable piece frames based on set
         for piece in self.piece_types:
@@ -225,11 +242,25 @@ class MuDreamCollectionFinder:
         # If this set is already configured, load its requirements
         if set_name and set_name in self.config['sets']:
             requirements = self.config['sets'][set_name]
-            for piece, options in requirements.items():
+            for piece, piece_data in requirements.items():
                 if piece in self.checkboxes:
+                    # Handle both old format (list) and new format (dict)
+                    if isinstance(piece_data, list):
+                        # Old format: just a list of options
+                        options = piece_data
+                        collected = False
+                    else:
+                        # New format: dict with options and collected status
+                        options = piece_data.get('options', [])
+                        collected = piece_data.get('collected', False)
+                    
+                    # Set checkbox states for options
                     for opt_code in options:
                         if opt_code in self.checkboxes[piece]:
                             self.checkboxes[piece][opt_code].set(True)
+                    
+                    # Set collected status
+                    self.collected_vars[piece].set(collected)
     
     def update_configured_sets_display(self):
         """Update the display of configured sets"""
@@ -262,7 +293,20 @@ class MuDreamCollectionFinder:
                 set_card = tk.Frame(self.configured_sets_frame, bg="#1e293b", padx=12, pady=8)
                 set_card.pack(fill="x", pady=4, padx=5)
                 
-                pieces_with_req = [p for p, opts in requirements.items() if opts]
+                # Count pieces with requirements and collected pieces
+                pieces_with_req = []
+                collected_count = 0
+                for p, piece_data in requirements.items():
+                    if isinstance(piece_data, list):
+                        # Old format
+                        if piece_data:
+                            pieces_with_req.append(p)
+                    else:
+                        # New format
+                        if piece_data.get('options'):
+                            pieces_with_req.append(p)
+                        if piece_data.get('collected'):
+                            collected_count += 1
                 
                 # Calculate total pieces for this set
                 total_pieces = 5
@@ -273,6 +317,8 @@ class MuDreamCollectionFinder:
                 
                 info_text = f"✓ {set_name}"
                 detail_text = f"{len(pieces_with_req)}/{total_pieces} pieces configured"
+                if collected_count > 0:
+                    detail_text += f" • {collected_count} collected ✓"
                 
                 left_frame = tk.Frame(set_card, bg="#1e293b")
                 left_frame.pack(side="left", fill="x", expand=True)
@@ -514,7 +560,30 @@ class MuDreamCollectionFinder:
                 pady=10
             )
             piece_frame.grid(row=0, column=idx, padx=5, pady=5, sticky="n")
+            self.piece_frames[piece] = piece_frame
             
+            # Add "Already Collected" checkbox at the top
+            collected_var = tk.BooleanVar()
+            self.collected_vars[piece] = collected_var
+            
+            collected_cb = tk.Checkbutton(
+                piece_frame,
+                text="✓ Already Collected",
+                variable=collected_var,
+                font=("Arial", 8, "bold"),
+                bg="#1e293b",
+                fg="#10b981",
+                selectcolor="#1e293b",
+                activebackground="#1e293b",
+                activeforeground="#10b981"
+            )
+            collected_cb.pack(anchor="w", pady=(0, 5))
+            
+            # Separator
+            separator = tk.Frame(piece_frame, bg="#475569", height=1)
+            separator.pack(fill="x", pady=5)
+            
+            # Excellent options
             self.checkboxes[piece] = {}
             for opt_code, opt_label in self.excellent_options.items():
                 var = tk.BooleanVar()
@@ -941,7 +1010,26 @@ class MuDreamCollectionFinder:
                 'message': 'No requirements configured'
             }
         
-        required_options = requirements[piece]
+        piece_data = requirements[piece]
+        
+        # Handle both old format (list) and new format (dict)
+        if isinstance(piece_data, list):
+            required_options = piece_data
+            is_collected = False
+        else:
+            required_options = piece_data.get('options', [])
+            is_collected = piece_data.get('collected', False)
+        
+        # Skip if already collected
+        if is_collected:
+            return {
+                'piece': piece,
+                'set': set_name,
+                'skipped': True,
+                'collected': True,
+                'message': '✓ Already collected'
+            }
+        
         if not required_options:
             return {
                 'piece': piece,
@@ -1016,6 +1104,9 @@ class MuDreamCollectionFinder:
         self.results_text.insert(tk.END, f"Value calc: Life/Chaos=1.0, Creation=0.5, Bless/Soul=0.25, DC=0.125\n", "header")
         self.results_text.insert(tk.END, f"{'='*80}\n\n", "header")
         
+        total_items_found = 0
+        total_collected = 0
+        
         for set_name, results in all_results.items():
             self.results_text.insert(tk.END, f"\n{'█'*80}\n", "set_header")
             self.results_text.insert(tk.END, f"  {set_name} SET\n", "set_header")
@@ -1029,12 +1120,17 @@ class MuDreamCollectionFinder:
                 self.results_text.insert(tk.END, "-" * 80 + "\n")
                 
                 if result.get('skipped'):
-                    self.results_text.insert(tk.END, f"⊘ {result['message']}\n\n", "skipped")
+                    if result.get('collected'):
+                        self.results_text.insert(tk.END, f"✓ {result['message']}\n\n", "collected")
+                        total_collected += 1
+                    else:
+                        self.results_text.insert(tk.END, f"⊘ {result['message']}\n\n", "skipped")
                 elif result.get('error'):
                     self.results_text.insert(tk.END, f"✗ ERROR: {result['message']}\n\n", "error")
                 else:
                     total = result['total']
                     filtered = result['filtered_total']
+                    total_items_found += filtered
                     
                     if price_filters:
                         self.results_text.insert(tk.END, f"Found {total} total, {filtered} match price filters\n\n", "info")
@@ -1044,7 +1140,12 @@ class MuDreamCollectionFinder:
                     # Get the required excellent options for this piece
                     required_opts = []
                     if set_name in self.config['sets'] and piece_type in self.config['sets'][set_name]:
-                        opt_codes = self.config['sets'][set_name][piece_type]
+                        piece_data = self.config['sets'][set_name][piece_type]
+                        if isinstance(piece_data, list):
+                            opt_codes = piece_data
+                        else:
+                            opt_codes = piece_data.get('options', [])
+                        
                         opt_labels = {
                             'iml': 'MH', 'imsd': 'SD', 'dd': 'DD',
                             'rd': 'REF', 'dsr': 'DSR', 'izdr': 'ZEN'
@@ -1111,6 +1212,14 @@ class MuDreamCollectionFinder:
                     else:
                         self.results_text.insert(tk.END, "  No items match your price filters\n\n", "no_results")
         
+        # Summary
+        self.results_text.insert(tk.END, f"\n{'='*80}\n", "header")
+        self.results_text.insert(tk.END, f"📊 SUMMARY: Found {total_items_found} item(s)", "header")
+        if total_collected > 0:
+            self.results_text.insert(tk.END, f" • Skipped {total_collected} collected piece(s)", "collected")
+        self.results_text.insert(tk.END, "\n", "header")
+        self.results_text.insert(tk.END, f"{'='*80}\n", "header")
+        
         self.results_text.tag_config("header", foreground="#a78bfa", font=("Consolas", 10, "bold"))
         self.results_text.tag_config("set_header", foreground="#fbbf24", font=("Consolas", 11, "bold"))
         self.results_text.tag_config("piece_header", foreground="#c4b5fd", font=("Consolas", 9, "bold"))
@@ -1123,6 +1232,7 @@ class MuDreamCollectionFinder:
         self.results_text.tag_config("price", foreground="#22c55e", font=("Consolas", 9, "bold"))
         self.results_text.tag_config("detail", foreground="#94a3b8", font=("Consolas", 8))
         self.results_text.tag_config("skipped", foreground="#94a3b8", font=("Consolas", 9, "italic"))
+        self.results_text.tag_config("collected", foreground="#10b981", font=("Consolas", 9, "bold", "italic"))
         self.results_text.tag_config("error", foreground="#ef4444")
         self.results_text.tag_config("no_results", foreground="#94a3b8", font=("Consolas", 9, "italic"))
     
@@ -1192,10 +1302,20 @@ class MuDreamCollectionFinder:
         
         for set_name, requirements in self.config['sets'].items():
             for piece in self.piece_types:
-                if piece not in requirements or not requirements[piece]:
+                piece_data = requirements.get(piece)
+                if not piece_data:
                     continue
                 
-                options = {opt: [0, 1, 2, 3, 4] for opt in requirements[piece]}
+                # Handle both formats
+                if isinstance(piece_data, list):
+                    required_options = piece_data
+                else:
+                    required_options = piece_data.get('options', [])
+                
+                if not required_options:
+                    continue
+                
+                options = {opt: [0, 1, 2, 3, 4] for opt in required_options}
                 query = self.build_query(set_name, piece, options)
                 
                 try:
