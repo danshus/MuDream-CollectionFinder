@@ -1,0 +1,90 @@
+{
+  "sets": {
+    "Vine": {
+      "helm": [
+        "izdr"
+      ],
+      "armor": [
+        "iml",
+        "dsr",
+        "izdr"
+      ],
+      "pants": [
+        "dd",
+        "rd",
+        "izdr"
+      ],
+      "gloves": [
+        "iml",
+        "dsr"
+      ],
+      "boots": [
+        "dd"
+      ]
+    },
+    "Pad": {
+      "helm": [
+        "iml"
+      ],
+      "armor": [
+        "dd",
+        "izdr"
+      ],
+      "pants": [
+        "iml",
+        "dsr",
+        "izdr"
+      ],
+      "gloves": [
+        "iml"
+      ],
+      "boots": [
+        "dd",
+        "dsr"
+      ]
+    },
+    "Leather": {
+      "helm": [
+        "imsd"
+      ],
+      "armor": [
+        "dd",
+        "dsr"
+      ],
+      "pants": [
+        "imsd",
+        "dsr"
+      ],
+      "gloves": [
+        "dd"
+      ],
+      "boots": [
+        "dd",
+        "izdr"
+      ]
+    },
+    "Bronze": {
+      "helm": [
+        "dd",
+        "izdr"
+      ],
+      "armor": [
+        "iml",
+        "dsr",
+        "izdr"
+      ],
+      "pants": [
+        "imsd",
+        "dd"
+      ],
+      "gloves": [
+        "imsd"
+      ],
+      "boots": [
+        "iml",
+        "imsd",
+        "izdr"
+      ]
+    }
+  }
+}
